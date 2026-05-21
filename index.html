@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>北洋丸 在庫管理</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans','Yu Gothic',sans-serif;background:#e8f0f7;color:#1a2a3a;min-height:100vh}
+.container{max-width:740px;margin:0 auto;padding:24px 16px 80px}
+.header{background:#1a4a7a;color:#fff;border-radius:12px;padding:18px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between}
+.header h1{font-size:18px;font-weight:700;letter-spacing:0.03em}
+.header-meta{font-size:12px;color:#a8c8e8;margin-top:4px}
+.header-right{text-align:right;font-size:13px;color:#a8c8e8}
+.header-total{font-size:26px;font-weight:700;color:#fff}
+.sync-status{font-size:11px;text-align:center;padding:6px;border-radius:8px;margin-bottom:12px;background:#fff;border:1px solid #c0d4e8;color:#5a7a9a}
+.sync-status.ok{color:#27ae60;border-color:#80c890}
+.sync-status.err{color:#c0392b;border-color:#e8a0a0}
+.add-form{background:#fff;border:1px solid #c0d4e8;border-radius:10px;padding:14px;margin-bottom:12px}
+.add-form-title{font-size:12px;font-weight:700;color:#1a4a7a;margin-bottom:10px;letter-spacing:0.04em}
+.add-form-row{display:flex;gap:8px;flex-wrap:wrap}
+.add-form input,.add-form select{font-size:14px;padding:0 10px;height:38px;border:1px solid #b0c8e0;border-radius:7px;background:#f4f8fc;color:#1a2a3a;font-family:inherit}
+.add-form input{flex:1;min-width:140px}
+.add-form select{min-width:170px}
+.add-form button{white-space:nowrap;font-size:13px;padding:0 16px;height:38px;border:none;border-radius:7px;background:#1a4a7a;color:#fff;cursor:pointer;font-family:inherit;font-weight:600}
+.add-form button:hover{background:#0e3460}
+.section-add-form{background:#fff;border:1px solid #c0d4e8;border-radius:10px;padding:14px;margin-bottom:16px}
+.section-add-row{display:flex;gap:8px}
+.section-add-row input{flex:1;font-size:14px;padding:0 10px;height:38px;border:1px solid #b0c8e0;border-radius:7px;background:#f4f8fc;color:#1a2a3a;font-family:inherit}
+.section-add-row button{white-space:nowrap;font-size:13px;padding:0 14px;height:38px;border:1px solid #b0c8e0;border-radius:7px;background:#fff;color:#1a4a7a;cursor:pointer;font-family:inherit;font-weight:600}
+.section-add-row button:hover{background:#e8f0f7}
+.section-block{margin-bottom:10px;border:1px solid #c0d4e8;border-radius:10px;overflow:hidden;background:#fff}
+.section-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;background:#dceaf5;user-select:none}
+.section-header:hover{background:#cde0f0}
+.section-left{display:flex;align-items:center;gap:10px}
+.section-name{font-size:14px;font-weight:700;color:#1a4a7a}
+.section-count{font-size:12px;color:#5a7a9a}
+.section-chevron{font-size:13px;color:#5a7a9a;transition:transform 0.2s;display:inline-block}
+.section-chevron.open{transform:rotate(180deg)}
+.section-body{display:none;flex-direction:column}
+.section-body.open{display:flex}
+.empty-section{padding:14px 16px;font-size:12px;color:#8aaabb;border-top:1px solid #e8f0f7}
+.item-card{padding:11px 16px;border-top:1px solid #eaf2f8;background:#fff}
+.item-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.item-name{font-size:13px;font-weight:600;color:#1a2a3a;flex:1;min-width:120px;line-height:1.4}
+.item-stock{display:flex;align-items:center;gap:6px}
+.stock-num{font-size:22px;font-weight:700;min-width:52px;text-align:center;color:#1a4a7a}
+.stock-num.zero{color:#c0392b}
+.stock-num.low{color:#d35400}
+.btn-stock{width:34px;height:34px;border:1px solid #b0c8e0;border-radius:7px;background:#f4f8fc;color:#1a4a7a;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;font-weight:700}
+.btn-stock.minus:hover{background:#fdecea;color:#c0392b;border-color:#e8a0a0}
+.btn-stock.plus:hover{background:#eaf5f0;color:#27ae60;border-color:#80c890}
+.item-meta{font-size:10px;color:#8aaabb;margin-top:5px}
+.item-actions{display:flex;gap:6px;margin-left:auto;align-items:center}
+.btn-move{padding:0 10px;height:26px;font-size:11px;border:1px solid #b0c8e0;border-radius:6px;background:#f4f8fc;color:#1a4a7a;cursor:pointer;font-family:inherit;font-weight:600}
+.btn-move:hover{background:#d0e4f2}
+.btn-delete{padding:0 10px;height:26px;font-size:11px;border:1px solid #ddd;border-radius:6px;background:#fff;color:#bbb;cursor:pointer;font-family:inherit}
+.btn-delete:hover{background:#fdecea;color:#c0392b;border-color:#e8a0a0}
+.item-memo-area{margin-top:8px}
+.memo-toggle{font-size:11px;color:#5a7a9a;cursor:pointer;background:none;border:none;padding:0;font-family:inherit;display:inline-flex;align-items:center;gap:3px}
+.memo-toggle:hover{color:#1a4a7a}
+.memo-last{font-size:10px;color:#8aaabb;}
+.memo-section{margin-top:8px;background:#f4f8fc;border-radius:8px;padding:10px}
+.memo-fields{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.memo-fields input{font-size:13px;padding:0 8px;height:34px;border:1px solid #b0c8e0;border-radius:6px;background:#fff;color:#1a2a3a;font-family:inherit}
+.memo-author-inp{min-width:110px;flex:1}
+.memo-text-inp{min-width:160px;flex:2}
+.memo-save{font-size:12px;padding:0 14px;height:30px;border:none;border-radius:6px;background:#1a4a7a;color:#fff;cursor:pointer;font-family:inherit;font-weight:600;white-space:nowrap}
+.memo-save:hover{background:#0e3460}
+.memo-log{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.memo-entry{font-size:11px;color:#3a5a7a;border-left:3px solid #a0c4e0;padding-left:8px;padding-top:2px;padding-bottom:2px}
+.memo-entry-header{font-size:10px;color:#8aaabb;margin-bottom:2px}
+.memo-entry-author{font-weight:700;color:#1a4a7a}
+.memo-del-btn{margin-left:8px;font-size:10px;padding:1px 7px;height:20px;border:1px solid #ddd;border-radius:4px;background:#fff;color:#bbb;cursor:pointer;font-family:inherit;vertical-align:middle}
+.memo-del-btn:hover{background:#fdecea;color:#c0392b;border-color:#e8a0a0}
+.saving-toast{position:fixed;bottom:20px;right:20px;background:#1a4a7a;color:#fff;font-size:12px;padding:8px 16px;border-radius:8px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:300}
+.saving-toast.show{opacity:1}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,20,60,0.45);z-index:100;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:24px 20px;width:300px;max-width:92vw;box-shadow:0 8px 32px rgba(0,40,100,0.18)}
+.modal-product{font-size:15px;font-weight:700;color:#1a2a3a;margin-bottom:3px}
+.modal-dir{font-size:12px;color:#5a7a9a;margin-bottom:12px}
+.modal-cur{font-size:13px;color:#5a7a9a;margin-bottom:10px}
+.modal input[type=number]{width:100%;font-size:28px;font-weight:700;text-align:center;padding:8px;border:1px solid #b0c8e0;border-radius:8px;background:#f4f8fc;color:#1a4a7a;margin-bottom:10px;font-family:inherit}
+.modal-preview{font-size:14px;color:#1a4a7a;text-align:center;margin-bottom:16px;min-height:18px;font-weight:700}
+.modal-btns{display:flex;gap:8px}
+.modal-btns button{flex:1;height:42px;font-size:14px;border-radius:8px;border:1px solid #b0c8e0;cursor:pointer;background:#fff;color:#1a2a3a;font-family:inherit;font-weight:600}
+.modal-btns .confirm{background:#1a4a7a;color:#fff;border-color:#1a4a7a}
+.modal-btns .confirm:hover{background:#0e3460}
+.modal-btns .cancel:hover{background:#e8f0f7}
+.move-modal{background:#fff;border-radius:14px;padding:24px 20px;width:300px;max-width:92vw;box-shadow:0 8px 32px rgba(0,40,100,0.18)}
+.move-modal-title{font-size:14px;font-weight:700;color:#1a2a3a;margin-bottom:4px}
+.move-modal-sub{font-size:12px;color:#5a7a9a;margin-bottom:14px}
+.move-modal select{width:100%;font-size:14px;padding:0 10px;height:40px;border:1px solid #b0c8e0;border-radius:8px;background:#f4f8fc;color:#1a2a3a;font-family:inherit;margin-bottom:14px}
+.move-modal-btns{display:flex;gap:8px}
+.move-modal-btns button{flex:1;height:40px;font-size:14px;border-radius:8px;border:1px solid #b0c8e0;cursor:pointer;background:#fff;color:#1a2a3a;font-family:inherit;font-weight:600}
+.move-modal-btns .confirm{background:#1a4a7a;color:#fff;border-color:#1a4a7a}
+.move-modal-btns .confirm:hover{background:#0e3460}
+.move-modal-btns .cancel:hover{background:#e8f0f7}
+.err{border:1.5px solid #c0392b !important}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div>
+      <h1>北洋丸 在庫管理</h1>
+      <div class="header-meta" id="sub-info">接続中...</div>
+    </div>
+    <div class="header-right">
+      <div style="font-size:11px;margin-bottom:2px">合計在庫</div>
+      <div class="header-total" id="total-label">—</div>
+      <div style="font-size:11px;margin-top:1px">点</div>
+    </div>
+  </div>
+
+  <div class="sync-status" id="sync-status">🔄 Firebase に接続中...</div>
+
+  <div class="add-form">
+    <div class="add-form-title">▸ 商品を追加</div>
+    <div class="add-form-row">
+      <input type="text" id="new-product" placeholder="商品名を入力..." />
+      <select id="new-section"></select>
+      <button onclick="addProduct()">＋ 追加</button>
+    </div>
+  </div>
+
+  <div class="section-add-form">
+    <div class="add-form-title">▸ セクションを追加</div>
+    <div class="section-add-row">
+      <input type="text" id="new-section-name" placeholder="新しいセクション名を入力..." />
+      <button onclick="addSection()">＋ 作成</button>
+    </div>
+  </div>
+
+  <div id="sections-list"></div>
+</div>
+
+<!-- 在庫変更モーダル -->
+<div class="modal-bg" id="modal" onclick="closeModalBg(event)">
+  <div class="modal">
+    <div class="modal-product" id="modal-title"></div>
+    <div class="modal-dir" id="modal-sub"></div>
+    <div class="modal-cur" id="modal-current"></div>
+    <input type="number" id="modal-input" min="0" step="1" placeholder="0" oninput="updatePreview()" />
+    <div class="modal-preview" id="modal-preview"></div>
+    <div class="modal-btns">
+      <button class="cancel" onclick="closeModal()">キャンセル</button>
+      <button class="confirm" onclick="confirmModal()">確定</button>
+    </div>
+  </div>
+</div>
+
+<!-- セクション移動モーダル -->
+<div class="modal-bg" id="move-modal" onclick="closeMoveModalBg(event)">
+  <div class="move-modal">
+    <div class="move-modal-title" id="move-modal-title"></div>
+    <div class="move-modal-sub">移動先のセクションを選んでください</div>
+    <select id="move-section-select"></select>
+    <div class="move-modal-btns">
+      <button class="cancel" onclick="closeMoveModal()">キャンセル</button>
+      <button class="confirm" onclick="confirmMove()">移動する</button>
+    </div>
+  </div>
+</div>
+
+<div class="saving-toast" id="saving-toast">保存しました ✓</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, set, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD0-Dyqn27zDbqfQ2dc94XEMm_SfUK-xQ0",
+  authDomain: "hokuyomaru-inventory.firebaseapp.com",
+  databaseURL: "https://hokuyomaru-inventory-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "hokuyomaru-inventory",
+  storageBucket: "hokuyomaru-inventory.firebasestorage.app",
+  messagingSenderId: "77316847092",
+  appId: "1:77316847092:web:f4348f0681854e533cf5a1",
+  measurementId: "G-SL0BHJQ56V"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const dbRef = ref(db, "inventory");
+
+const DEFAULT_SECTIONS = ["ふるさと納税メイン商品","昆布商品","ど冷えもんメイン商品","知床桜鱗","その他","催事用"];
+const DEFAULT_PRODUCTS = {
+  "ふるさと納税メイン商品": ["訳あり秋鮭 1.3kg","来運サーモン 800g","骨取り秋鮭 1.2kg","カマ＆ハラス 1.5kg","サイコロサーモン 1kg","鍋用カットフグ 350g"],
+  "昆布商品": ["知床昆布 80g","知床昆布粉末 25g","刻み昆布 50g","刻み昆布 100g","知床昆布ミルクジェラート（カップ）","知床昆布ミルクジェラート（バルク）"],
+  "ど冷えもんメイン商品": ["サクラマス刺身 50g","マツカワ刺身 50g","生タコ刺身 50g","オオカミウオ刺身 50g","炙りサクラマス刺身 50g","カレイ刺身 50g","お刺身福袋","お刺身じゃない福袋"],
+  "知床桜鱗": ["知床桜鱗刺身 50g","知床桜鱗（1本）","知床桜鱗〜極〜（1本）","知床桜鱗〜七分咲き〜（1本）"],
+  "その他": ["パリとば 30g"],
+  "催事用": []
+};
+
+let sections = [];
+let data = {};
+let memoOpen = {};
+let sectionOpen = {};
+let modalState = null;
+let moveState = null;
+let isInitialized = false;
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+function fmtDate(ts){
+  if(!ts) return "";
+  const d = new Date(ts);
+  return d.getFullYear()+"/"+(d.getMonth()+1).toString().padStart(2,"0")+"/"+d.getDate().toString().padStart(2,"0")+" "+d.getHours().toString().padStart(2,"0")+":"+d.getMinutes().toString().padStart(2,"0");
+}
+function stockClass(n){ return n===0?" zero":n<=5?" low":""; }
+function esc(s){ return String(s).replace(/\\/g,"\\\\").replace(/'/g,"\\'"); }
+function eh(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+function setStatus(msg, type=""){
+  const el = document.getElementById("sync-status");
+  if(!el) return;
+  el.textContent = msg;
+  el.className = "sync-status"+(type?" "+type:"");
+}
+
+function showToast(){
+  const t = document.getElementById("saving-toast");
+  if(t){ t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),1400); }
+}
+
+async function persist(){
+  try {
+    await set(dbRef, {sections, data});
+    showToast();
+  } catch(e){
+    setStatus("⚠️ 保存に失敗しました。接続を確認してください。","err");
+  }
+}
+
+function buildSectionSelect(){
+  const sel = document.getElementById("new-section");
+  if(sel) sel.innerHTML = sections.map(s=>`<option value="${eh(s)}">${eh(s)}</option>`).join("");
+}
+
+function addSection(){
+  const inp = document.getElementById("new-section-name");
+  const name = inp.value.trim();
+  if(!name) return;
+  if(sections.includes(name)){ alert("同名のセクションが既にあります"); return; }
+  sections.push(name);
+  data[name]=[];
+  inp.value="";
+  sectionOpen[name]=true;
+  buildSectionSelect();
+  persist();
+}
+
+function toggleSection(sec){
+  sectionOpen[sec]=!sectionOpen[sec];
+  render();
+}
+
+function render(){
+  const list = document.getElementById("sections-list");
+  if(!list) return;
+  let totalStock=0, totalProducts=0;
+  sections.forEach(s=>{ (data[s]||[]).forEach(p=>{ totalStock+=p.stock; totalProducts++; }); });
+  document.getElementById("total-label").textContent = totalStock;
+  document.getElementById("sub-info").textContent = sections.length+"セクション · "+totalProducts+"品";
+  list.innerHTML="";
+
+  sections.forEach(sec=>{
+    const products = data[sec]||[];
+    const isOpen = !!sectionOpen[sec];
+    const sTotal = products.reduce((s,p)=>s+p.stock,0);
+    const block = document.createElement("div");
+    block.className = "section-block";
+    const hdr = document.createElement("div");
+    hdr.className = "section-header";
+    hdr.innerHTML = `<div class="section-left"><span class="section-name">${eh(sec)}</span><span class="section-count">${products.length}品 · 在庫${sTotal}点</span></div><span class="section-chevron${isOpen?" open":""}">▼</span>`;
+    hdr.onclick = ()=>toggleSection(sec);
+    block.appendChild(hdr);
+    const body = document.createElement("div");
+    body.className = "section-body"+(isOpen?" open":"");
+    if(products.length===0){
+      body.innerHTML = `<div class="empty-section">商品がありません。上の入力欄から追加できます。</div>`;
+    } else {
+      products.forEach((p,i)=>{
+        const memos = p.memos||[];
+        const isOpenMemo = !!memoOpen[p.id];
+        let memoInner = "";
+        if(isOpenMemo){
+          const logHtml = memos.length>0
+            ? `<div class="memo-log">`+memos.slice().reverse().map((m,ri)=>{ const origIdx=memos.length-1-ri; return `<div class="memo-entry"><div class="memo-entry-header"><span class="memo-entry-author">${eh(m.author||"")}</span>　${fmtDate(m.ts)}<button class="memo-del-btn" onclick="window._deleteMemo('${esc(sec)}',${i},${origIdx})">削除</button></div>${eh(m.text)}</div>`; }).join("")+`</div>`
+            : "";
+          memoInner = `<div class="memo-section">
+            <div class="memo-fields">
+              <input class="memo-author-inp" type="text" id="ma-${p.id}" placeholder="担当者名（必須）" />
+              <input class="memo-text-inp" type="text" id="mt-${p.id}" placeholder="メモ内容" />
+              <button class="memo-save" onclick="window._saveMemo('${esc(sec)}',${i})">保存</button>
+            </div>
+            ${logHtml}
+          </div>`;
+        } else if(memos.length>0){
+          const last = memos[memos.length-1];
+          memoInner = `<span class="memo-last">（最終: ${eh(last.author||"")} ${fmtDate(last.ts)}）</span>`;
+        }
+        const card = document.createElement("div");
+        card.className = "item-card";
+        card.innerHTML = `
+          <div class="item-top">
+            <div class="item-name">${eh(p.name)}</div>
+            <div class="item-stock">
+              <button class="btn-stock minus" onclick="window._openModal('${esc(sec)}',${i},'minus')">−</button>
+              <div class="stock-num${stockClass(p.stock)}">${p.stock}</div>
+              <button class="btn-stock plus" onclick="window._openModal('${esc(sec)}',${i},'plus')">＋</button>
+            </div>
+            <div class="item-actions">
+              <button class="btn-move" onclick="window._openMoveModal('${esc(sec)}',${i})">移動</button>
+              <button class="btn-delete" onclick="window._deleteProduct('${esc(sec)}',${i})">削除</button>
+            </div>
+          </div>
+          <div class="item-meta">在庫更新: ${p.lastChanged?fmtDate(p.lastChanged):"未更新"}</div>
+          <div class="item-memo-area">
+            <div style="display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <button class="memo-toggle" onclick="window._toggleMemo('${p.id}')">📝 ${isOpenMemo?"メモを閉じる":"メモ"+(memos.length>0?" ("+memos.length+"件)":"を追加")}</button>
+              ${!isOpenMemo?memoInner:""}
+            </div>
+            ${isOpenMemo?memoInner:""}
+          </div>`;
+        body.appendChild(card);
+      });
+    }
+    block.appendChild(body);
+    list.appendChild(block);
+  });
+}
+
+// グローバルに公開（インラインonclick用）
+window._openModal = function(sec,i,direction){
+  const p = data[sec][i];
+  modalState={sec,i,direction};
+  document.getElementById("modal-title").textContent = p.name;
+  document.getElementById("modal-sub").textContent = direction==="plus"?"増やす数を入力してください":"減らす数を入力してください";
+  document.getElementById("modal-current").textContent = "現在の在庫: "+p.stock+"点";
+  const inp = document.getElementById("modal-input");
+  inp.value=""; document.getElementById("modal-preview").textContent="";
+  document.getElementById("modal").classList.add("open");
+  setTimeout(()=>inp.focus(),60);
+};
+window._updatePreview = function(){
+  if(!modalState) return;
+  const p = data[modalState.sec][modalState.i];
+  const v = parseInt(document.getElementById("modal-input").value,10);
+  if(isNaN(v)||v<0){ document.getElementById("modal-preview").textContent=""; return; }
+  const next = modalState.direction==="plus"?p.stock+v:Math.max(0,p.stock-v);
+  document.getElementById("modal-preview").textContent = p.stock+" → "+next+"点";
+};
+window._confirmModal = function(){
+  if(!modalState) return;
+  const v = parseInt(document.getElementById("modal-input").value,10);
+  if(isNaN(v)||v<0){ closeModal(); return; }
+  const p = data[modalState.sec][modalState.i];
+  p.stock = modalState.direction==="plus"?p.stock+v:Math.max(0,p.stock-v);
+  p.lastChanged = Date.now();
+  closeModal(); persist(); render();
+};
+window._openMoveModal = function(sec,i){
+  const p = data[sec][i];
+  moveState={sec,i};
+  document.getElementById("move-modal-title").textContent = "「"+p.name+"」を移動";
+  const sel = document.getElementById("move-section-select");
+  sel.innerHTML = sections.filter(s=>s!==sec).map(s=>`<option value="${eh(s)}">${eh(s)}</option>`).join("");
+  document.getElementById("move-modal").classList.add("open");
+};
+window._confirmMove = function(){
+  if(!moveState) return;
+  const {sec,i} = moveState;
+  const dest = document.getElementById("move-section-select").value;
+  const p = data[sec].splice(i,1)[0];
+  if(!data[dest]) data[dest]=[];
+  data[dest].push(p);
+  sectionOpen[dest]=true;
+  closeMoveModal(); persist(); render();
+};
+window._toggleMemo = function(id){ memoOpen[id]=!memoOpen[id]; render(); };
+window._saveMemo = function(sec,i){
+  const p = data[sec][i];
+  const aEl = document.getElementById("ma-"+p.id);
+  const tEl = document.getElementById("mt-"+p.id);
+  if(!aEl||!tEl) return;
+  const author = aEl.value.trim();
+  const text = tEl.value.trim();
+  if(!author){ aEl.classList.add("err"); aEl.focus(); return; }
+  aEl.classList.remove("err");
+  if(!text){ tEl.focus(); return; }
+  if(!p.memos) p.memos=[];
+  p.memos.push({ts:Date.now(),author,text});
+  persist(); render();
+};
+window._deleteMemo = function(sec,i,memoIdx){
+  if(!confirm("このメモを削除しますか？")) return;
+  data[sec][i].memos.splice(memoIdx,1);
+  persist(); render();
+};
+window._deleteProduct = function(sec,i){
+  if(!confirm("「"+data[sec][i].name+"」を削除しますか？")) return;
+  data[sec].splice(i,1);
+  persist(); render();
+};
+window._addProduct = function(){
+  const inp = document.getElementById("new-product");
+  const sec = document.getElementById("new-section").value;
+  const name = inp.value.trim();
+  if(!name) return;
+  if(!data[sec]) data[sec]=[];
+  data[sec].push({id:uid(),name,stock:0,lastChanged:null,memos:[]});
+  inp.value="";
+  sectionOpen[sec]=true;
+  persist(); render();
+};
+window._addSection = addSection;
+
+function closeModal(){ document.getElementById("modal").classList.remove("open"); modalState=null; }
+function closeMoveModal(){ document.getElementById("move-modal").classList.remove("open"); moveState=null; }
+window.closeModal = closeModal;
+window.closeMoveModal = closeMoveModal;
+window.closeModalBg = function(e){ if(e.target.id==="modal") closeModal(); };
+window.closeMoveModalBg = function(e){ if(e.target.id==="move-modal") closeMoveModal(); };
+window.updatePreview = window._updatePreview;
+window.confirmModal = window._confirmModal;
+window.confirmMove = window._confirmMove;
+window.addProduct = window._addProduct;
+window.addSection = window._addSection;
+
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"){ closeModal(); closeMoveModal(); }
+  if(e.key==="Enter"&&modalState) window._confirmModal();
+});
+document.getElementById("new-product").addEventListener("keydown",e=>{ if(e.key==="Enter") window._addProduct(); });
+document.getElementById("new-section-name").addEventListener("keydown",e=>{ if(e.key==="Enter") e.preventDefault(); });
+
+// Firebase リアルタイム同期
+onValue(dbRef, (snapshot) => {
+  const saved = snapshot.val();
+  if(saved && saved.sections && saved.data){
+    sections = saved.sections;
+    data = saved.data;
+    sections.forEach(s=>{ if(!data[s]) data[s]=[]; });
+  } else if(!isInitialized) {
+    sections = DEFAULT_SECTIONS.slice();
+    data = {};
+    sections.forEach(s=>{ data[s]=(DEFAULT_PRODUCTS[s]||[]).map(name=>({id:uid(),name,stock:0,lastChanged:null,memos:[]})); });
+    set(dbRef, {sections, data});
+  }
+  isInitialized = true;
+  buildSectionSelect();
+  setStatus("✅ リアルタイム同期中 — 複数端末で共有されています","ok");
+  render();
+}, (error) => {
+  setStatus("⚠️ 接続エラー: "+error.message,"err");
+});
+
+</script>
+</body>
+</html>
