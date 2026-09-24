@@ -37,6 +37,8 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans','Yu Gothic',sans-se
 .section-count{font-size:12px;color:#5a7a9a}
 .section-chevron{font-size:13px;color:#5a7a9a;transition:transform 0.2s;display:inline-block}
 .section-chevron.open{transform:rotate(180deg)}
+.btn-section-delete{font-size:11px;padding:0 8px;height:24px;border:1px solid #ddd;border-radius:5px;background:#fff;color:#bbb;cursor:pointer;font-family:inherit;margin-left:8px}
+.btn-section-delete:hover{background:#fdecea;color:#c0392b;border-color:#e8a0a0}
 .section-body{display:none;flex-direction:column}
 .section-body.open{display:flex}
 .empty-section{padding:14px 16px;font-size:12px;color:#8aaabb;border-top:1px solid #e8f0f7}
@@ -275,8 +277,8 @@ function render(){
     block.className = "section-block";
     const hdr = document.createElement("div");
     hdr.className = "section-header";
-    hdr.innerHTML = `<div class="section-left"><span class="section-name">${eh(sec)}</span><span class="section-count">${products.length}品 · 在庫${sTotal}点</span></div><span class="section-chevron${isOpen?" open":""}">▼</span>`;
-    hdr.onclick = ()=>toggleSection(sec);
+    hdr.innerHTML = `<div class="section-left"><span class="section-name">${eh(sec)}</span><span class="section-count">${products.length}品 · 在庫${sTotal}点</span></div><div style="display:flex;align-items:center;gap:4px"><button class="btn-section-delete" onclick="window._deleteSection(event,'${esc(sec)}')">削除</button><span class="section-chevron${isOpen?" open":""}">▼</span></div>`;
+    hdr.onclick = (e)=>{ if(!e.target.classList.contains('btn-section-delete')) toggleSection(sec); };
     block.appendChild(hdr);
     const body = document.createElement("div");
     body.className = "section-body"+(isOpen?" open":"");
@@ -399,6 +401,18 @@ window._saveMemo = function(sec,i){
 window._deleteMemo = function(sec,i,memoIdx){
   if(!confirm("このメモを削除しますか？")) return;
   data[sec][i].memos.splice(memoIdx,1);
+  persist(); render();
+};
+window._deleteSection = function(e, sec){
+  e.stopPropagation();
+  const products = data[sec]||[];
+  const msg = products.length > 0
+    ? `「${sec}」には${products.length}品入っています。\nセクションごとすべて削除しますか？`
+    : `「${sec}」を削除しますか？`;
+  if(!confirm(msg)) return;
+  sections = sections.filter(s=>s!==sec);
+  delete data[sec];
+  buildSectionSelect();
   persist(); render();
 };
 window._deleteProduct = function(sec,i){
