@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>北洋丸 在庫管理</title>
+<title>北洋丸 食品在庫</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 [hidden]{display:none !important}
@@ -124,30 +124,8 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans','Yu Gothic',sans-se
 <body>
 <div class="container">
 
-  <!-- ===== TOP ===== -->
-  <div id="view-top">
-    <div class="header">
-      <div>
-        <h1>北洋丸 在庫管理</h1>
-        <div class="header-meta">管理する在庫を選んでください</div>
-      </div>
-    </div>
-    <div class="sync-status">🔄 Firebase に接続中...</div>
-    <div class="menu">
-      <a class="menu-card" href="#/food">
-        <div class="menu-title">食品在庫<span class="menu-arrow">›</span></div>
-        <div class="menu-sub" id="menu-sub-food">読み込み中...</div>
-      </a>
-      <a class="menu-card" href="#/gear">
-        <div class="menu-title">漁具在庫<span class="menu-arrow">›</span></div>
-        <div class="menu-sub" id="menu-sub-gear">読み込み中...</div>
-      </a>
-    </div>
-  </div>
-
   <!-- ===== 在庫ページ（食品・漁具共通） ===== -->
-  <div id="view-store" hidden>
-    <a class="back-link" href="#/">‹ TOPへ戻る</a>
+  <div id="view-store">
     <div class="header">
       <div>
         <h1 id="store-title"></h1>
@@ -310,7 +288,7 @@ function newItem(name, stock, unit, stamp){
 
 const STORES = {
   food: {
-    path:"inventory", title:"食品在庫", itemWord:"商品", countWord:"品",
+    path:"inventory", title:"北洋丸 食品在庫", itemWord:"商品", countWord:"品",
     defaultUnit:"点", units:null, showUnit:false,
     seed(){
       const sections = FOOD_SECTIONS.slice(), data = {};
@@ -319,7 +297,7 @@ const STORES = {
     }
   },
   gear: {
-    path:"gear", title:"漁具在庫", itemWord:"品目", countWord:"品目",
+    path:"gear", title:"北洋丸 漁具在庫", itemWord:"品目", countWord:"品目",
     defaultUnit:"丸", units:["丸","個","本","枚","巻","箱","m"], showUnit:true,
     seed(){
       const now = Date.now(), sections = [], data = {};
@@ -334,7 +312,7 @@ const STORES = {
 
 const state = {};
 Object.keys(STORES).forEach(k=>{ state[k] = {loaded:false, error:null, sections:[], data:{}}; });
-let current = null;            // null=TOP / "food" / "gear"
+const current = "food";      // このページで扱う在庫（food=食品 / gear=漁具）
 const memoOpen = {};
 const sectionOpen = {};
 let modalState = null;
@@ -397,7 +375,7 @@ async function persist(key, toast=true){
   updateStatus();
 }
 
-Object.keys(STORES).forEach(key=>{
+[current].forEach(key=>{
   const st = state[key];
   onValue(ref(db, STORES[key].path), snap=>{
     const saved = snap.val();
@@ -432,15 +410,9 @@ function updateStatus(){
 
 /* ================= 画面切り替え ================= */
 function route(){
-  const h = location.hash;
-  current = h==="#/food" ? "food" : h==="#/gear" ? "gear" : null;
-  document.getElementById("view-top").hidden = !!current;
-  document.getElementById("view-store").hidden = !current;
-  closeModal(); closeMoveModal();
-  if(current) setupStoreView();
-  document.title = current ? STORES[current].title+"｜北洋丸 在庫管理" : "北洋丸 在庫管理";
+  setupStoreView();
+  document.title = STORES[current].title;
   renderAll();
-  window.scrollTo(0,0);
 }
 
 function setupStoreView(){
@@ -786,7 +758,6 @@ document.getElementById("new-product").addEventListener("keydown", e=>{
 });
 document.getElementById("new-section-name").addEventListener("keydown", e=>{ if(e.key==="Enter") e.preventDefault(); });
 
-window.addEventListener("hashchange", route);
 route();
 </script>
 </body>
